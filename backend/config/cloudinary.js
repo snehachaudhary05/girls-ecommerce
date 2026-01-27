@@ -5,7 +5,8 @@ const looksLikePlaceholder = (v) => !v || String(v).toLowerCase().startsWith('yo
 let cloudinaryReady = false
 
 const isCloudinaryConfigured = () => {
-  const name = (process.env.CLOUDINARY_NAME || '').trim().toLowerCase()
+  // Support both naming conventions
+  const name = (process.env.CLOUDINARY_NAME || process.env.CLOUDINARY_CLOUD_NAME || '').trim().toLowerCase()
   const key = process.env.CLOUDINARY_API_KEY
   // Support both common names
   const secret = process.env.CLOUDINARY_API_SECRET || process.env.CLOUDINARY_SECRET_KEY
@@ -22,7 +23,7 @@ const connectCloudinary = async () => {
     return false
   }
 
-  const cloudName = (process.env.CLOUDINARY_NAME || '').trim().toLowerCase()
+  const cloudName = (process.env.CLOUDINARY_NAME || process.env.CLOUDINARY_CLOUD_NAME || '').trim().toLowerCase()
 
   cloudinary.config({
     cloud_name: cloudName,
