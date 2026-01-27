@@ -1,0 +1,34 @@
+# Node.js modules
+/node_modules
+
+# Environment variables
+.env
+
+# Logs
+/*.log
+logs/
+
+# Build/Dist
+/build
+/dist
+/out
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# IDE/Editor-specific files
+.vscode/
+.idea/
+
+# Docker files
+/docker-compose.override.yml
+Dockerfile*
+
+# Test coverage
+/coverage
+
+# npm logs
+npm-debug.log
+yarn-debug.log
+yarn-error.log

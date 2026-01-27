@@ -1,0 +1,28 @@
+{
+  "name": "ecommerce-monorepo",
+  "version": "1.0.0",
+  "description": "Full-stack e-commerce platform",
+  "private": true,
+  "scripts": {
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install && cd ../admin && npm install",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:admin": "cd admin && npm run dev",
+    "build:frontend": "cd frontend && npm run build",
+    "build:admin": "cd admin && npm run build",
+    "build:all": "npm run build:frontend && npm run build:admin",
+    "start:backend": "cd backend && npm start",
+    "preview:frontend": "cd frontend && npm run preview",
+    "preview:admin": "cd admin && npm run preview"
+  },
+  "keywords": [
+    "ecommerce",
+    "mern",
+    "react",
+    "nodejs",
+    "mongodb",
+    "express"
+  ],
+  "author": "",
+  "license": "ISC"
+}
