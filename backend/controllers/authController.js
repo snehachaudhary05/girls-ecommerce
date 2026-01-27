@@ -3,13 +3,17 @@ import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import crypto from "crypto";
 
-// Configure Nodemailer transporter
+// Configure Nodemailer transporter with explicit host/port and sane timeouts
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: process.env.EMAIL_HOST || "smtp.gmail.com",
+  port: Number(process.env.EMAIL_PORT) || 587,
+  secure: (process.env.EMAIL_PORT || "587") === "465",
   auth: {
     user: process.env.SMTP_EMAIL,
     pass: process.env.SMTP_PASSWORD,
   },
+  connectionTimeout: 20000, // fail fast if SMTP is unreachable
+  socketTimeout: 20000,
 });
 
 // Generate OTP
@@ -45,7 +49,7 @@ export const requestOtp = async (req, res) => {
       { upsert: true, new: true }
     );
 
-    // Send OTP via email
+    // Send OTP via email with timeout wrapper
     const mailOptions = {
       from: process.env.SMTP_EMAIL,
       to: email,
@@ -53,7 +57,24 @@ export const requestOtp = async (req, res) => {
       html: `<p>Your OTP is: <strong>${otp}</strong></p><p>This OTP will expire in 10 minutes.</p>`,
     };
 
-    await transporter.sendMail(mailOptions);
+    // Wrap in Promise.race to enforce hard 15s timeout
+    const sendWithTimeout = new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('Email sending timed out after 15 seconds'));
+      }, 15000);
+      
+      transporter.sendMail(mailOptions)
+        .then(info => {
+          clearTimeout(timeout);
+          resolve(info);
+        })
+        .catch(err => {
+          clearTimeout(timeout);
+          reject(err);
+        });
+    });
+
+    await sendWithTimeout;
 
     res.json({
       success: true,

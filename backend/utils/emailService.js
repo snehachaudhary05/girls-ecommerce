@@ -3,12 +3,14 @@ import nodemailer from 'nodemailer';
 // Create transporter - supports both Gmail and Zoho Mail
 const transporter = nodemailer.createTransport({
     host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-    port: process.env.EMAIL_PORT || 587,
-    secure: process.env.EMAIL_PORT === '465' ? true : false, // true for 465, false for other ports
+    port: Number(process.env.EMAIL_PORT) || 587,
+    secure: (process.env.EMAIL_PORT || '587') === '465',
     auth: {
         user: process.env.SMTP_EMAIL || process.env.EMAIL_USER,
         pass: process.env.SMTP_PASSWORD || process.env.EMAIL_PASSWORD
-    }
+    },
+    connectionTimeout: 20000, // fail fast if SMTP is unreachable
+    socketTimeout: 20000,
 });
 
 // Email templates
@@ -242,7 +244,24 @@ export const sendEmail = async (email, template, ...args) => {
             ...emailContent
         };
 
-        const info = await transporter.sendMail(mailOptions);
+        // Wrap sendMail in Promise.race to enforce hard 15s timeout
+        const sendWithTimeout = new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+                reject(new Error('Email sending timed out after 15 seconds'));
+            }, 15000);
+            
+            transporter.sendMail(mailOptions)
+                .then(info => {
+                    clearTimeout(timeout);
+                    resolve(info);
+                })
+                .catch(err => {
+                    clearTimeout(timeout);
+                    reject(err);
+                });
+        });
+
+        const info = await sendWithTimeout;
         console.log('Email sent successfully:', info.messageId);
         return { success: true, messageId: info.messageId };
     } catch (error) {
