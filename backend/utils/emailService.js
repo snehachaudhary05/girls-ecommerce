@@ -1,20 +1,45 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
-// Create transporter - supports both Gmail and Zoho Mail
-const transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-    port: Number(process.env.EMAIL_PORT) || 587,
-    secure: (process.env.EMAIL_PORT || '587') === '465',
-    auth: {
-        user: process.env.SMTP_EMAIL || process.env.EMAIL_USER,
-        pass: process.env.SMTP_PASSWORD || process.env.EMAIL_PASSWORD
-    },
-    connectionTimeout: 20000, // fail fast if SMTP is unreachable
-    socketTimeout: 20000,
-});
+// Initialize Resend
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Email templates
 const emailTemplates = {
+    otpEmail: (otp) => ({
+        subject: 'Your OTP for Forever Store Login',
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
+                <div style="background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <h2 style="color: #6B4899; margin-bottom: 20px;">Your OTP Code</h2>
+                    
+                    <p style="color: #555; line-height: 1.6; margin-bottom: 20px;">
+                        Hello,
+                    </p>
+                    
+                    <p style="color: #555; line-height: 1.6; margin-bottom: 20px;">
+                        Your One-Time Password (OTP) for Scrunchies Store is:
+                    </p>
+                    
+                    <div style="background-color: #f0f0f0; padding: 20px; border-radius: 8px; text-align: center; margin-bottom: 20px;">
+                        <p style="font-size: 32px; font-weight: bold; color: #6B4899; margin: 0; letter-spacing: 5px;">${otp}</p>
+                    </div>
+                    
+                    <p style="color: #e74c3c; font-weight: bold; margin-bottom: 20px;">
+                        This OTP will expire in 10 minutes. Do not share this code with anyone.
+                    </p>
+                    
+                    <p style="color: #555; line-height: 1.6; margin-bottom: 20px;">
+                        If you did not request this OTP, please ignore this email.
+                    </p>
+                    
+                    <p style="color: #999; font-size: 12px; border-top: 1px solid #eee; padding-top: 20px; margin-top: 20px;">
+                        This is an automated email. Please do not reply to this email.
+                    </p>
+                </div>
+            </div>
+        `
+    }),
+    
     orderConfirmed: (userName, orderId, orderAmount, items) => ({
         subject: '✓ Order Confirmed - Scrunchies Store',
         html: `
@@ -225,45 +250,27 @@ const emailTemplates = {
     })
 };
 
-// Send email function
+// Send email function using Resend
 export const sendEmail = async (email, template, ...args) => {
     try {
-        if ((!process.env.SMTP_EMAIL && !process.env.EMAIL_USER) || (!process.env.SMTP_PASSWORD && !process.env.EMAIL_PASSWORD)) {
-            console.log('Email service not configured. Skipping email.');
+        if (!process.env.RESEND_API_KEY) {
+            console.log('Resend API key not configured. Skipping email.');
             return { success: true, message: 'Email service not configured' };
         }
 
         console.log('Sending email to:', email);
-        console.log('Using email:', process.env.SMTP_EMAIL || process.env.EMAIL_USER);
         
         const emailContent = emailTemplates[template](...args);
         
-        const mailOptions = {
-            from: `"Scrunchies Store" <${process.env.SMTP_EMAIL || process.env.EMAIL_USER}>`,
+        const data = await resend.emails.send({
+            from: 'Scrunchies Store <onboarding@resend.dev>',
             to: email,
-            ...emailContent
-        };
-
-        // Wrap sendMail in Promise.race to enforce hard 15s timeout
-        const sendWithTimeout = new Promise((resolve, reject) => {
-            const timeout = setTimeout(() => {
-                reject(new Error('Email sending timed out after 15 seconds'));
-            }, 15000);
-            
-            transporter.sendMail(mailOptions)
-                .then(info => {
-                    clearTimeout(timeout);
-                    resolve(info);
-                })
-                .catch(err => {
-                    clearTimeout(timeout);
-                    reject(err);
-                });
+            subject: emailContent.subject,
+            html: emailContent.html
         });
 
-        const info = await sendWithTimeout;
-        console.log('Email sent successfully:', info.messageId);
-        return { success: true, messageId: info.messageId };
+        console.log('Email sent successfully:', data.id);
+        return { success: true, messageId: data.id };
     } catch (error) {
         console.error('Error sending email:', error);
         console.error('Email service error details:', error.message);
