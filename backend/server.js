@@ -68,6 +68,10 @@ import helmet from 'helmet'
   app.use('/api/order', orderRouter);
   app.use('/api/admin', adminRouter);
   app.use('/api/wishlist', wishlistRouter);
+    // Health check endpoint for Render
+    app.get('/healthz', (req, res) => {
+      res.status(200).send('ok')
+    })
   app.get('/', (req, res) => {
       res.send("API working")
   })
