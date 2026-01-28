@@ -1,9 +1,10 @@
 import nodemailer from 'nodemailer';
 
-// Initialize nodemailer transporter for Gmail
+// Initialize nodemailer transporter
+// Works with Gmail, Brevo (Sendinblue), or any SMTP service
 const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
+    host: process.env.SMTP_HOST || 'smtp-relay.brevo.com',
+    port: process.env.SMTP_PORT || 587,
     secure: false, // Use TLS
     auth: {
         user: process.env.SMTP_EMAIL,
@@ -11,7 +12,10 @@ const transporter = nodemailer.createTransport({
     },
     tls: {
         rejectUnauthorized: false
-    }
+    },
+    connectionTimeout: 10000, // 10 seconds
+    greetingTimeout: 10000,
+    socketTimeout: 10000
 });
 
 // Email templates
