@@ -77,9 +77,5 @@ import helmet from 'helmet'
       res.send("API working")
   })
 
-  // Start server immediately (before DB connections complete)
   app.listen(port, '0.0.0.0', () => console.log('Server started on port: ' + port));
-  
-  // Export for Vercel
-  export default app;
 })();
