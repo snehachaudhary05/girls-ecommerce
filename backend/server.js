@@ -33,8 +33,9 @@ import helmet from 'helmet'
   // Helpful when deployed behind Render/NGINX proxies
   app.set('trust proxy', 1)
 
-  await connectDB();
-  await connectCloudinary();
+  // Connect to DB and Cloudinary in background (don't await)
+  connectDB();
+  connectCloudinary();
   
   // CORS configuration - simple and works for both dev and production
   const corsOptions = {
@@ -68,7 +69,7 @@ import helmet from 'helmet'
   app.use('/api/order', orderRouter);
   app.use('/api/admin', adminRouter);
   app.use('/api/wishlist', wishlistRouter);
-    // Health check endpoint for Render
+    // Health check endpoint for Railway - respond immediately
     app.get('/healthz', (req, res) => {
       res.status(200).send('ok')
     })
@@ -76,6 +77,7 @@ import helmet from 'helmet'
       res.send("API working")
   })
 
+  // Start server immediately (before DB connections complete)
   app.listen(port, '0.0.0.0', () => console.log('Server started on port: ' + port));
   
   // Export for Vercel
