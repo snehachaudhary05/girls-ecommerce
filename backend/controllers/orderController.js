@@ -67,10 +67,14 @@ const placeOrder = async (req, res) => {
         try {
             const user = await userModel.findById(userId);
             if (user && user.email) {
-                await sendEmail(user.email, 'orderConfirmed', user.name || 'Valued Customer', newOrder._id.toString(), amount, items);
+                console.log(`[Order Email] Sending order confirmation to ${user.email}`);
+                const emailResult = await sendEmail(user.email, 'orderConfirmed', user.name || 'Valued Customer', newOrder._id.toString(), amount, items);
+                console.log(`[Order Email] Result:`, emailResult);
+            } else {
+                console.log(`[Order Email] User not found or no email: ${userId}`);
             }
         } catch (emailError) {
-            console.error('Failed to send order confirmation email:', emailError);
+            console.error('[Order Email] Failed to send order confirmation email:', emailError);
             // Don't fail the order placement if email fails
         }
 

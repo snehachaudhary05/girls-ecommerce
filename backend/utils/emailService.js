@@ -1,7 +1,13 @@
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 
-// Initialize Resend
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Initialize nodemailer transporter for Gmail
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.SMTP_EMAIL,
+        pass: process.env.SMTP_PASSWORD
+    }
+});
 
 // Email templates
 const emailTemplates = {
@@ -250,30 +256,32 @@ const emailTemplates = {
     })
 };
 
-// Send email function using Resend
+// Send email function using Nodemailer
 export const sendEmail = async (email, template, ...args) => {
     try {
-        if (!process.env.RESEND_API_KEY) {
-            console.log('Resend API key not configured. Skipping email.');
-            return { success: true, message: 'Email service not configured' };
+        if (!process.env.SMTP_EMAIL || !process.env.SMTP_PASSWORD) {
+            console.error('[Email Service] SMTP credentials not configured!');
+            return { success: false, error: 'Email service not configured' };
         }
 
-        console.log('Sending email to:', email);
+        console.log('[Email Service] Sending email to:', email);
         
         const emailContent = emailTemplates[template](...args);
         
-        const data = await resend.emails.send({
-            from: 'Scrunchies Store <onboarding@resend.dev>',
+        const mailOptions = {
+            from: `"Scrunchies Store" <${process.env.SMTP_EMAIL}>`,
             to: email,
             subject: emailContent.subject,
             html: emailContent.html
-        });
+        };
 
-        console.log('Email sent successfully:', data.id);
-        return { success: true, messageId: data.id };
+        const info = await transporter.sendMail(mailOptions);
+
+        console.log('[Email Service] Email sent successfully. Message ID:', info.messageId);
+        return { success: true, messageId: info.messageId };
     } catch (error) {
-        console.error('Error sending email:', error);
-        console.error('Email service error details:', error.message);
+        console.error('[Email Service] Error sending email:', error);
+        console.error('[Email Service] Error details:', error.message);
         return { success: false, error: error.message };
     }
 };
