@@ -1,3 +1,31 @@
+import axios from 'axios';
+
+// Send email using Brevo HTTP API
+const sendEmailBrevo = async ({ to, subject, htmlContent, fromEmail, fromName }) => {
+    const BREVO_API_KEY = process.env.BREVO_API_KEY;
+    const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
+    try {
+        const response = await axios.post(
+            BREVO_API_URL,
+            {
+                sender: { name: fromName, email: fromEmail },
+                to: [{ email: to }],
+                subject,
+                htmlContent
+            },
+            {
+                headers: {
+                    'api-key': BREVO_API_KEY,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+        return response.data;
+    } catch (error) {
+        console.error('Brevo email send error:', error.response?.data || error.message);
+        throw error;
+    }
+};
 // Removed nodemailer/SMTP setup. Using Brevo HTTP API only.
 
 // Email templates
@@ -263,7 +291,6 @@ export const sendEmail = async (email, template, ...args) => {
             fromName
         });
         console.log('[Email Service] Email sent successfully via Brevo API. Result:', result);
-                  const BREVO_API_KEY = process.env.BREVO_API_KEY;
     } catch (error) {
         console.error('[Email Service] Error sending email via Brevo API:', error.message);
         return { success: false, error: error.message };
