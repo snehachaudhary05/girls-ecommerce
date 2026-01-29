@@ -1,22 +1,4 @@
-import nodemailer from 'nodemailer';
-
-// Initialize nodemailer transporter
-// Works with Gmail, Brevo (Sendinblue), or any SMTP service
-const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp-relay.brevo.com',
-    port: process.env.SMTP_PORT || 587,
-    secure: false, // Use TLS
-    auth: {
-        user: process.env.SMTP_EMAIL,
-        pass: process.env.SMTP_PASSWORD
-    },
-    tls: {
-        rejectUnauthorized: false
-    },
-    connectionTimeout: 10000, // 10 seconds
-    greetingTimeout: 10000,
-    socketTimeout: 10000
-});
+// Removed nodemailer/SMTP setup. Using Brevo HTTP API only.
 
 // Email templates
 const emailTemplates = {
@@ -265,34 +247,27 @@ const emailTemplates = {
     })
 };
 
-// Send email function using Nodemailer
+
+// Send email function using Brevo HTTP API
 export const sendEmail = async (email, template, ...args) => {
     try {
-        if (!process.env.SMTP_EMAIL || !process.env.SMTP_PASSWORD) {
-            console.error('[Email Service] SMTP credentials not configured!');
-            return { success: false, error: 'Email service not configured' };
-        }
-
-        console.log('[Email Service] Sending email to:', email);
-        
         const emailContent = emailTemplates[template](...args);
-        
-        const mailOptions = {
-            from: `"Scrunchies Store" <${process.env.SMTP_EMAIL}>`,
+        // Replace with your verified sender email and name
+        const fromEmail = 'komalgambler@gmail.com';
+        const fromName = 'Scrunchies Store';
+        const result = await sendEmailBrevo({
             to: email,
             subject: emailContent.subject,
-            html: emailContent.html
-        };
-
-        const info = await transporter.sendMail(mailOptions);
-
-        console.log('[Email Service] Email sent successfully. Message ID:', info.messageId);
-        return { success: true, messageId: info.messageId };
+            htmlContent: emailContent.html,
+            fromEmail,
+            fromName
+        });
+        console.log('[Email Service] Email sent successfully via Brevo API. Result:', result);
+                  const BREVO_API_KEY = process.env.BREVO_API_KEY;
     } catch (error) {
-        console.error('[Email Service] Error sending email:', error);
-        console.error('[Email Service] Error details:', error.message);
+        console.error('[Email Service] Error sending email via Brevo API:', error.message);
         return { success: false, error: error.message };
     }
 };
 
-export default { sendEmail, emailTemplates };
+export default { sendEmail, emailTemplates, sendEmailBrevo };
