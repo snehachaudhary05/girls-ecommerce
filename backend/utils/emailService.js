@@ -280,7 +280,6 @@ const emailTemplates = {
 export const sendEmail = async (email, template, ...args) => {
     try {
         const emailContent = emailTemplates[template](...args);
-        // Replace with your verified sender email and name
         const fromEmail = 'komalgambler@gmail.com';
         const fromName = 'Scrunchies Store';
         const result = await sendEmailBrevo({
@@ -291,6 +290,7 @@ export const sendEmail = async (email, template, ...args) => {
             fromName
         });
         console.log('[Email Service] Email sent successfully via Brevo API. Result:', result);
+        return { success: true, result };
     } catch (error) {
         console.error('[Email Service] Error sending email via Brevo API:', error.message);
         return { success: false, error: error.message };
